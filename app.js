@@ -5,11 +5,11 @@ const cTable = require('console.table');
 
 
 const connection = mysql.createConnection({
-    host: process.env.HOST,
+    host: "localhost",
     port: 3306,
-    user: process.env.USERNAME,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE
+    user: "root",
+    password: "",
+    database: "company"
 });
 
 connection.connect(err => {
@@ -36,8 +36,10 @@ const prompts = async function (questions) {
     console.log(userInput)
     switch (userInput.mainChoice) {
         case "Add Department":
+            addDepartment();
             return;
         case "Add Role":
+            addRole();
             return;
         case "Add Employee":
             addEmployee()
@@ -50,6 +52,9 @@ const prompts = async function (questions) {
             return;
         case "View Employees":
             viewEmployees()
+            return;
+        case "Update Employee Roles":
+            updateRoles()
             return;
     }
 }
@@ -70,7 +75,7 @@ async function viewDepartments() {
 }
 
 async function viewEmployees() {
-    await connection.query("SELECT * FROM employee", (err, result) => {
+    await connection.query("SELECT first_name AS 'First Name', last_name AS 'Last Name', salary AS 'Salary', role_id AS 'Role ID' FROM employee LEFT JOIN role on employee.role_id = role.id", (err, result) => {
         if (err) throw err;
         console.log("All Employees:")
         console.table(result)
@@ -85,6 +90,46 @@ async function viewRoles() {
         if (err) throw err;
         console.log("All roles:")
         console.table(result)
+        console.log("--------------------")
+        userInput()
+    }
+    )
+}
+
+async function addDepartment() {
+    const addDepartment = await inquirer.prompt({
+        type: "input",
+        name: "newDepartment",
+        message: "What department would you like to add?",
+
+    })
+    await connection.query("INSERT INTO department (name) VALUES (?)", [(addDepartment.newDepartment)], (err, result) => {
+        if (err) throw err;
+        console.log("Department Added!")
+        console.table(result)
+        console.log("--------------------")
+        userInput()
+    }
+    )
+}
+
+async function addRole() {
+    const addRole = await inquirer.prompt([{
+        type: "input",
+        name: "newRole",
+        message: "What role would you like to add?",
+
+    },
+    {
+        type: "input",
+        name: "newRoleSalary",
+        message: "Enter a salary for the new role: ",
+
+    }])
+    let values = [addRole.newRole, Number(addRole.newRoleSalary)]
+    await connection.query("INSERT INTO role (title, salary) VALUES (?)", [(values)], (err, result) => {
+        if (err) throw err;
+        console.log("Department Added!")
         console.log("--------------------")
         userInput()
     }
@@ -108,9 +153,8 @@ async function addEmployee() {
         {
             type: "list",
             name: "employeeRole",
-            message: "Enter Employee's Role: ",
+            message: "Enter Employee's Department: ",
             choices: roles
-
         }
 
     ])
@@ -138,6 +182,44 @@ async function addEmployee() {
     }
     )
 }
+
+
+async function updateRoles() {
+    viewEmployees()
+    const idPrompt = await inquirer.prompt(
+        {
+            type: "input",
+            name: "updateRole",
+            message: "Enter the ID of the employee you want to update: ",
+        }
+    )
+    const query = "SELECT first_name, last_name FROM employee WHERE id = ?"
+    let id = idPrompt.updateRole
+    await connection.query(query, [(id)], (err, result) => {
+        if (err) throw err;
+        console.log("Chosen Employee: ")
+        console.table(result)
+        console.log("--------------------")
+        
+    }
+    )
+    const idPromptUpdate = await inquirer.prompt(
+        {
+            type: "input",
+            name: "updateRoleId",
+            message: "What is the employee's new role ID?",
+        }
+    )
+    
+    const newquery = "UPDATE employee SET role_id = ?"
+    let newId = idPromptUpdate.updateRoleId
+    await connection.query(query, [(newId)], (err, result) => {
+        if (err) throw err;
+        console.log("Chosen Employee: ")
+        console.table(result)
+        console.log("--------------------")
+
+})}
 
 
 userInput();

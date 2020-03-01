@@ -11,7 +11,8 @@ create table role (
     id int not null auto_increment primary key,
     title varchar(30) not null,
     salary decimal(10,2) not null,
-    department_id int not null
+    department_id int,
+    foreign key (department_id) references department(id)
 );
 
 create table employee (
