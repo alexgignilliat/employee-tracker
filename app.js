@@ -17,7 +17,7 @@ connection.connect(err => {
         console.error("error connecting: " + err.stack);
         return;
     }
-    // console.log("connected as id " + connection.threadId);
+    console.log("connected as id " + connection.threadId);
 });
 
 let roles = ["Sales", "Engineering", "Finance", "Legal"]
@@ -63,15 +63,13 @@ async function userInput() {
     await prompts(questions)
 }
 
-
 async function viewDepartments() {
     await connection.query("SELECT * FROM department", (err, result) => {
         if (err) throw err;
         console.log("All Departments:")
         console.table(result)
         userInput()
-    }
-    )
+    });
 }
 
 async function viewEmployees() {
@@ -81,8 +79,7 @@ async function viewEmployees() {
         console.table(result)
         console.log("--------------------")
         userInput()
-    }
-    )
+    })
 }
 
 async function viewRoles() {
@@ -92,8 +89,7 @@ async function viewRoles() {
         console.table(result)
         console.log("--------------------")
         userInput()
-    }
-    )
+    })
 }
 
 async function addDepartment() {
@@ -106,11 +102,9 @@ async function addDepartment() {
     await connection.query("INSERT INTO department (name) VALUES (?)", [(addDepartment.newDepartment)], (err, result) => {
         if (err) throw err;
         console.log("Department Added!")
-        console.table(result)
         console.log("--------------------")
         userInput()
-    }
-    )
+    })
 }
 
 async function addRole() {
@@ -161,15 +155,16 @@ async function addEmployee() {
     switch (test.employeeRole) {
         case "Sales":
             test.id = 1
-            break;
+            return;
         case "Engineering":
             test.id = 2
-            break;
+            return;
         case "Finance":
             test.id = 3
-            break;
+            return;
         case "Legal":
             test.id = 4
+            return;
 
     }
     let sql = "INSERT INTO employee (first_name, last_name, role_id) VALUES (?)"
@@ -177,49 +172,30 @@ async function addEmployee() {
     await connection.query(sql, [(values)], (err, result) => {
         if (err) throw err;
         console.log("Employee Added.");
-        viewEmployees()
         userInput()
-    }
-    )
-}
+    });
+};
 
-
-async function updateRoles() {
-    viewEmployees()
-    const idPrompt = await inquirer.prompt(
+async function updateRoles(){
+    const updateRole = await inquirer.prompt([{
+        name: "id",
+        type: "input",
+        message: "Enter ID of employee you'd like to update: "
+        },
         {
-            type: "input",
-            name: "updateRole",
-            message: "Enter the ID of the employee you want to update: ",
-        }
-    )
-    const query = "SELECT first_name, last_name FROM employee WHERE id = ?"
-    let id = idPrompt.updateRole
-    await connection.query(query, [(id)], (err, result) => {
+         name: "roleId",
+         type: "input",
+         message: "Enter ID of the new role: ",
+         }])
+    const updatedRoleId = updateRole.id;
+    const roleId = updateRole.roleId;
+      
+    const query = "UPDATE employee SET role_id=? WHERE id=?";
+    await connection.query(query, [roleId, updatedRoleId], function (err, res) {
         if (err) throw err;
-        console.log("Chosen Employee: ")
-        console.table(result)
-        console.log("--------------------")
-        
-    }
-    )
-    const idPromptUpdate = await inquirer.prompt(
-        {
-            type: "input",
-            name: "updateRoleId",
-            message: "What is the employee's new role ID?",
-        }
-    )
-    
-    const newquery = "UPDATE employee SET role_id = ?"
-    let newId = idPromptUpdate.updateRoleId
-    await connection.query(query, [(newId)], (err, result) => {
-        if (err) throw err;
-        console.log("Chosen Employee: ")
-        console.table(result)
-        console.log("--------------------")
-
-})}
-
-
+         console.log("Employee Role Updated.")
+         userInput();
+    });
+};
+      
 userInput();
